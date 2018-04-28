@@ -1,0 +1,5 @@
+{
+  "app_name": "Project",
+  "app_path": "somepath/to/your/app/in/debian",
+  "port": 8989
+}

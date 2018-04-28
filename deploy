@@ -1,0 +1,39 @@
+#!/bin/bash
+
+red=`tput setaf 1`
+green=`tput setaf 2`
+reset=`tput sgr0`
+
+STATUS_FILE="$PWD/status/check"
+APP_DIR=$1;
+APP_NAME=$2;
+
+if [ "$1" != "" ]; then
+  cd $APP_DIR
+  echo "Version $(git rev-parse --short HEAD) is active now" | tee $STATUS_FILE
+  echo "
+Start deploying $APP_NAME!" | tee -a $STATUS_FILE
+  git fetch origin master | tee -a $STATUS_FILE
+  git reset --hard origin/master | tee -a $STATUS_FILE
+  yarn | tee -a $STATUS_FILE
+  yarn run lint | tee -a $STATUS_FILE
+  echo "EXIT: ${PIPESTATUS[0]}"
+  if [ ${PIPESTATUS[0]} -ne 0 ]; then
+    echo "Version $(git rev-parse --short HEAD) failed to deploy! :(" | tee -a $STATUS_FILE
+    sleep 10
+    echo "Version $(git rev-parse --short HEAD) failed to deploy! :(" | tee $STATUS_FILE
+  else
+    echo "Starting to build new version: $(git rev-parse --short HEAD)" | tee -a $STATUS_FILE
+    npx ng build --prod --output-path ./tmp.dist | tee -a $STATUS_FILE
+    rm -rf dist
+    mv tmp.dist dist
+    echo "${green}$APP_NAME Deployed!${reset}" | tee -a $STATUS_FILE
+    echo "Version $(git rev-parse --short HEAD) has been just deployed" | tee -a $STATUS_FILE
+    sleep 10
+    echo "Version $(git rev-parse --short HEAD) is active now" | tee $STATUS_FILE
+  fi
+else
+  echo "${red}Please, set the path!${reset}
+I.e. ./deploy /var/www/mysite.com/"
+fi
+

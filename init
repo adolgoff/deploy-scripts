@@ -1,0 +1,43 @@
+#!/usr/bin/node
+const spawn = require('child_process').spawn;
+const config = require('./config.json');
+const http = require('http');
+
+const port = config.port;
+const appPath = config.app_path;
+const appName = config.app_name;
+
+let deploymentStatus = 'Deployed ';
+
+const requestHandler = (request, response) => {
+  const git = spawn('git', ['rev-parse', '--short', 'HEAD'], {cwd: appPath});
+  let gitHash = '';
+
+  git.stdout.on('data', (data) => {
+    gitHash = data;
+    response.end(`${deploymentStatus} ${gitHash}`);
+
+    const deploy = spawn('./deploy', [appPath, appName]);
+    deploy.stdout.on('data', (data) => {
+      console.log(data.toString());
+
+    });
+  });
+  
+  git.stderr.on('data', (data) => {
+    gitHash = data;
+    response.end(gitHash);
+  });
+
+  git.on('close', (code) => {
+    gitHash = `child process exited with code ${code}`;
+    response.end(gitHash);
+  });
+}
+
+const server = http.createServer(requestHandler);
+
+server.listen(port, (err) => {
+  if (err) return console.log('something bad happened', err);
+  console.log(`server is listening on ${port}`);
+})
