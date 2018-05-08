@@ -24,13 +24,20 @@ Start deploying $APP_NAME!" | tee -a $STATUS_FILE
     echo "Version $(git rev-parse --short HEAD) failed to deploy! :(" | tee $STATUS_FILE
   else
     echo "Starting to build new version: $(git rev-parse --short HEAD)" | tee -a $STATUS_FILE
+
     npx ng build --prod --output-path ./tmp.dist | tee -a $STATUS_FILE
-    rm -rf dist
-    mv tmp.dist dist
-    echo "${green}$APP_NAME Deployed!${reset}" | tee -a $STATUS_FILE
-    echo "Version $(git rev-parse --short HEAD) has been just deployed" | tee -a $STATUS_FILE
-    sleep 10
-    echo "Version $(git rev-parse --short HEAD) is active now" | tee $STATUS_FILE
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
+      echo "Verion $(git rev-parse --short HEAD) has failed to build :(" | tee -a $STATUS_FILE
+      sleep 10
+      echo "Verion $(git rev-parse --short HEAD) has failed to build :(" | tee $STATUS_FILE
+    else
+      rm -rf dist
+      mv tmp.dist dist
+      echo "${green}$APP_NAME Deployed!${reset}" | tee -a $STATUS_FILE
+      echo "Version $(git rev-parse --short HEAD) has been just deployed" | tee -a $STATUS_FILE
+      sleep 10
+      echo "Version $(git rev-parse --short HEAD) is active now" | tee $STATUS_FILE
+    fi
   fi
 else
   echo "${red}Please, set the path!${reset}
